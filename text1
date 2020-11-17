@@ -1,0 +1,33 @@
+/*for (i in 1..clockTime) {
+    if (!dead) {
+        if (currUser.busy == 0) {
+            logger.log(0, State.E)
+            for (state in data[u]) {
+                when (state) {
+                    State.W -> {
+                        print("_")
+                    }
+                    State.I -> {
+                        print("I")
+                    }
+                    else -> {
+                        print(" ")
+                    }
+                }
+                n++
+                if (n % clockTime == 0)
+                    s += "| "
+            }
+            if (currUser.tasks[0] == 0) {
+                currUser.tasks.removeAt(0)
+                if (inputTime == 0)
+                    dead = true
+            }
+        }
+        else {
+            logger.log(currUser.id, State.I)
+            if (currUser.busy == 0)
+                dead = true
+        }
+    }
+}*/
