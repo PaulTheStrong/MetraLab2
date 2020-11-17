@@ -30,7 +30,8 @@ public class App {
 
     public static int countOperators(String code) {
         KotlinTokensList list = tokenizeKotlinCode(code);
-        list.removeIf(kotlinToken -> kotlinToken.getText().equals(" ") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment") || kotlinToken.getText().equals("{") || kotlinToken.getText().equals("}"));
+        list.add(new KotlinToken("NL", "\n", 0));
+        list.removeIf(kotlinToken -> kotlinToken.getType().equals("WS") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment") || kotlinToken.getText().equals("{") || kotlinToken.getText().equals("}"));
 
         list.removeIf(kotlinToken -> list.get(list.indexOf(kotlinToken)).getText().equals("\n") && list.indexOf(kotlinToken) + 1 < list.size() && list.get(list.indexOf(kotlinToken) + 1).getText().equals("\n"));
 
@@ -43,7 +44,8 @@ public class App {
     public static int countConditionals(String code) {
         KotlinTokensList list = tokenizeKotlinCode(code);
         int Result = 0;
-        list.removeIf(kotlinToken -> kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment"));
+        list.add(new KotlinToken("NL", "\n", 0));
+        list.removeIf(kotlinToken -> kotlinToken.getType().equals("WS") || kotlinToken.getText().equals("\n") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment"));
         for(KotlinToken token : list) {
             if (list.get(list.indexOf(token)).getText().equals("else") && list.get(list.indexOf(token) + 1).getText().equals("->") )
                 Result--;
@@ -52,9 +54,10 @@ public class App {
         return Result;
     }
 
-    public static int countDepth(String code) throws Exception{
+    public static int countDepth(String code){
         KotlinTokensList list = tokenizeKotlinCode(code);
-        list.removeIf(kotlinToken ->  kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") ||
+        list.add(new KotlinToken("NL", "\n", 0));
+        list.removeIf(kotlinToken ->  kotlinToken.getType().equals("WS") || kotlinToken.getText().equals("\n") ||
                 kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment"));
         KotlinTokensList filteredList = new KotlinTokensList(Collections.emptyList());
         int cntPars = 0;
@@ -174,7 +177,7 @@ public class App {
                     break;
                 }
                 default : {
-                    if (filteredList.get(filteredList.indexOf(token) + 1).getText().equals("->"))
+                    if (filteredList.indexOf(token) + 1 < filteredList.size() && filteredList.get(filteredList.indexOf(token) + 1).getText().equals("->"))
                         continue;
                     if(!canInsertOp) {
                         while (!stk.empty() && !stk.peek().getSecond().equals("{"))
@@ -201,12 +204,26 @@ public class App {
     public static void main(String[] args) throws Exception {
         //String code = Files.readString(Path.of("/home/pavel/Учеба/Metra/Lab2J/text1"));
 
-        String code = "if (a > b) {\n" +
-        "print(a) }\n" +
-        "else {\n" +
-        "print(b)\n" +
-        "}\n";
-
+        String code = "do {\n" +
+                "\top1\n" +
+                "\twhen(x) {\n" +
+                "\t1 -> { \n" +
+                "\t\t1\n" +
+                "\t\t}\n" +
+                "\t2 -> {\n" +
+                "\t\t2\n" +
+                "\t\t}\n" +
+                "\telse -> \n" +
+                "\t\t{\n" +
+                "\t\te \n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "\twhile(x) {\n" +
+                "\tprint(x)\n" +
+                "\t}\n" +
+                "} \n" +
+                "while(x)\n";
+        System.out.print(code);
         System.out.println("Максимальная вложенность: " + countDepth(code));
         System.out.println("Всего операторов : " + countOperators(code));
         System.out.println("Условных операторов: " + countConditionals(code));

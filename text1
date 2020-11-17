@@ -1,4 +1,5 @@
-/*for (i in 1..clockTime) {
+
+for (i in 1..clockTime) {
     if (!dead) {
         if (currUser.busy == 0) {
             logger.log(0, State.E)
@@ -30,4 +31,4 @@
                 dead = true
         }
     }
-}*/
+}
