@@ -13,9 +13,14 @@ import java.util.function.Predicate;
 import static org.jetbrains.kotlin.spec.grammar.tools.KotlinGrammarToolsKt.tokenizeKotlinCode;
 
 public class App {
-    static Set<String> flowOps = Set.of("if", "when", "do", "while", "else", "->", "for", "{", "}");
-    static Set<String> flowStart = Set.of("if", "when", "do", "while", "else", "for");
-    static Set<String> conditionals = Set.of("if", "while", "->", "for");
+    static Set<String> flowOps = new HashSet<>();
+    static Set<String> flowStart = new HashSet<>();
+    static Set<String> conditionals = new HashSet<>();
+    static {
+        flowOps.addAll(Arrays.asList("if", "when", "do", "while", "else", "->", "for", "{", "}"));
+        flowStart.addAll(Arrays.asList("if", "when", "do", "while", "else", "for"));
+        conditionals.addAll(Arrays.asList("if", "while", "->", "for"));
+    }
 
     private static void printWithTabs(String s, int tabCount) {
         //for(int i = 0; i < tabCount; i++)
@@ -25,19 +30,9 @@ public class App {
 
     public static int countOperators(String code) {
         KotlinTokensList list = tokenizeKotlinCode(code);
-        list.removeIf(new Predicate<>() {
-            @Override
-            public boolean test(KotlinToken kotlinToken) {
-                return kotlinToken.getText().equals(" ") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment") || kotlinToken.getText().equals("{") || kotlinToken.getText().equals("}");
-            }
-        });
+        list.removeIf(kotlinToken -> kotlinToken.getText().equals(" ") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment") || kotlinToken.getText().equals("{") || kotlinToken.getText().equals("}"));
 
-        list.removeIf(new Predicate<>() {
-            @Override
-            public boolean test(KotlinToken kotlinToken) {
-                return list.get(list.indexOf(kotlinToken)).getText().equals("\n") && list.indexOf(kotlinToken) + 1 < list.size() && list.get(list.indexOf(kotlinToken) + 1).getText().equals("\n");
-            }
-        });
+        list.removeIf(kotlinToken -> list.get(list.indexOf(kotlinToken)).getText().equals("\n") && list.indexOf(kotlinToken) + 1 < list.size() && list.get(list.indexOf(kotlinToken) + 1).getText().equals("\n"));
 
         int Result = 0;
         for (KotlinToken token : list)
@@ -48,12 +43,7 @@ public class App {
     public static int countConditionals(String code) {
         KotlinTokensList list = tokenizeKotlinCode(code);
         int Result = 0;
-        list.removeIf(new Predicate<>() {
-            @Override
-            public boolean test(KotlinToken kotlinToken) {
-                return kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment");
-            }
-        });
+        list.removeIf(kotlinToken -> kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment"));
         for(KotlinToken token : list) {
             if (list.get(list.indexOf(token)).getText().equals("else") && list.get(list.indexOf(token) + 1).getText().equals("->") )
                 Result--;
@@ -62,14 +52,10 @@ public class App {
         return Result;
     }
 
-    public static int countDepth(String code) {
+    public static int countDepth(String code) throws Exception{
         KotlinTokensList list = tokenizeKotlinCode(code);
-        list.removeIf(new Predicate<>() {
-            @Override
-            public boolean test(KotlinToken kotlinToken) {
-                return kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") || kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment");
-            }
-        });
+        list.removeIf(kotlinToken ->  kotlinToken.getText().equals(" ") || kotlinToken.getText().equals("\n") ||
+                kotlinToken.getType().equals("LineComment") || kotlinToken.getType().equals("DelimitedComment"));
         KotlinTokensList filteredList = new KotlinTokensList(Collections.emptyList());
         int cntPars = 0;
         boolean isSkip = false;
@@ -109,7 +95,10 @@ public class App {
         boolean canInsertOp = false;
         for (KotlinToken token : filteredList) {
             switch (token.getText()) {
-                case "if", "when", "do", "for" -> {
+                case "if":
+                case "when":
+                case "do":
+                case "for": {
                     if (!canInsertOp) {
                         while (!stk.empty() && !(stk.peek().getSecond().equals("{") || stk.peek().getSecond().equals("else")))
                             stk.pop();
@@ -122,30 +111,36 @@ public class App {
                     }
                     canInsertOp = true;
                     printWithTabs(token.getText(), currentDepth);
-                    if(token.getText().equals("when"))
+                    if(token.getText().equals("when")) {
                         stk.push(new Pair<>(currentDepth, token.getText()));
-                    else
+                    }
+                    else {
                         stk.push(new Pair<>(currentDepth++, token.getText()));
+                    }
+                    break;
                 }
-                case "->" -> {
+                case "->" : {
                     canInsertOp = true;
                     printWithTabs(token.getText(), currentDepth);
                     stk.push(new Pair<>(currentDepth++, token.getText()));
+                    break;
                 }
-                case "{" -> {
+                case "{" : {
                     canInsertOp = false;
                     printWithTabs(token.getText(), currentDepth);
                     stk.push(new Pair<>(currentDepth, token.getText()));
+                    break;
                 }
-                case "}" -> {
+                case "}" : {
                     while (!stk.peek().getSecond().equals("{"))
                         stk.pop();
 
                     canInsertOp = false;
                     currentDepth = stk.pop().getFirst();
                     printWithTabs(token.getText(), currentDepth);
+                    break;
                 }
-                case "else" -> {
+                case "else" : {
                     if (filteredList.get(filteredList.indexOf(token) + 1).getText().equals("->"))
                     {
                         printWithTabs(token.getText(), --currentDepth);
@@ -155,8 +150,9 @@ public class App {
                     printWithTabs(token.getText(), currentDepth);
                     stk.push(new Pair<>(currentDepth++, "else"));
                     canInsertOp = true;
+                    break;
                 }
-                case "while" -> {
+                case "while" : {
                     if (stk.empty() || !stk.peek().getSecond().equals("do")) {
                         if (!canInsertOp) {
                             while (!stk.empty() && !(stk.peek().getSecond().equals("{") || stk.peek().getSecond().equals("else")))
@@ -175,8 +171,9 @@ public class App {
                         printWithTabs(token.getText(), currentDepth--);
                         stk.pop();
                     }
+                    break;
                 }
-                default -> {
+                default : {
                     if (filteredList.get(filteredList.indexOf(token) + 1).getText().equals("->"))
                         continue;
                     if(!canInsertOp) {
@@ -191,6 +188,7 @@ public class App {
                     printWithTabs("op", currentDepth);
                     if(!stk.empty() && stk.peek().getSecond().equals("else"))
                         stk.pop();
+                    break;
                 }
             }
             maxDepth = Math.max(currentDepth, maxDepth);
@@ -200,8 +198,14 @@ public class App {
         return Math.max(maxDepth - 1, 0);
     }
 
-    public static void main(String[] args) throws IOException {
-        String code = Files.readString(Path.of("/home/pavel/Учеба/Metra/Lab2J/text1"));
+    public static void main(String[] args) throws Exception {
+        //String code = Files.readString(Path.of("/home/pavel/Учеба/Metra/Lab2J/text1"));
+
+        String code = "if (a > b) {\n" +
+        "print(a) }\n" +
+        "else {\n" +
+        "print(b)\n" +
+        "}\n";
 
         System.out.println("Максимальная вложенность: " + countDepth(code));
         System.out.println("Всего операторов : " + countOperators(code));
